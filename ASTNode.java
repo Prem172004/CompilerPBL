@@ -18,7 +18,6 @@ public abstract class ASTNode {
 
     public static class ProgramNode extends ASTNode {
         public List<ASTNode> statements = new ArrayList<>();
-        @Override
         public void accept(Visitor visitor) {
             visitor.visit(this);
         }
@@ -26,7 +25,6 @@ public abstract class ASTNode {
 
     public static class VarDeclNode extends ASTNode {
         public String name;
-        @Override
         public void accept(Visitor visitor) {
             visitor.visit(this);
         }
@@ -35,7 +33,6 @@ public abstract class ASTNode {
     public static class AssignNode extends ASTNode {
         public String expression;
         public String name;
-        @Override
         public void accept(Visitor visitor) {
             visitor.visit(this);
         }
@@ -44,7 +41,6 @@ public abstract class ASTNode {
     public static class IfNode extends ASTNode {
         public String condition;
         public List<ASTNode> body = new ArrayList<>();
-        @Override
         public void accept(Visitor visitor) {
             visitor.visit(this);
         }
@@ -52,7 +48,6 @@ public abstract class ASTNode {
 
     public static class PrintNode extends ASTNode {
         public String expression;
-        @Override
         public void accept(Visitor visitor) {
         visitor.visit(this);
         }
@@ -61,7 +56,6 @@ public abstract class ASTNode {
     public static class WhileNode extends ASTNode {
         public String condition;
         public List<ASTNode> body = new ArrayList<>();
-        @Override
         public void accept(Visitor visitor) {
             visitor.visit(this);
         }
