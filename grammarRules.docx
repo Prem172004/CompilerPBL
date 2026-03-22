@@ -1,0 +1,148 @@
+Part 1: Your Official Grammar Rules
+Your compiler is strictly case-sensitive for keywords (they must be ALL CAPS) and relies on newlines (not semicolons) to separate statements.
+
+1. Variable Declarations
+You must declare a variable and its type before assigning a value to it.
+
+Rule: DECLARE <name> AS <INT | STRING | BOOLEAN>
+
+Note: The parser expects exactly 4 words for a declaration.
+
+2. Assignments
+You can assign values to variables using the = operator.
+
+Rule: <name> = <expression>
+
+Valid Expressions: Numbers (10), Strings ("Hello"), Booleans (TRUE, FALSE), or mathematical/logical combinations (x + 5, y AND TRUE).
+
+3. Output
+
+Rule: PRINT <expression>
+
+4. Conditionals (IF / ELSE)
+The ELSE block is optional. Note: We do not have an ELSE IF keyword, so multiple conditions must be nested.
+
+Rule:
+
+Plaintext
+IF <condition> THEN
+  <statements>
+ELSE
+  <statements>
+ENDIF
+5. WHILE Loops
+Executes a block of code as long as the condition evaluates to true.
+
+Rule:
+
+Plaintext
+WHILE <condition> DO
+  <statements>
+ENDWHILE
+6. FOR Loops
+A bounded loop that increments a variable from a starting value to an ending value.
+
+Rule:
+
+Plaintext
+FOR <variable> = <start_value> TO <end_value> DO
+  <statements>
+ENDFOR
+7. Logical Operators
+Used to combine conditions.
+
+Supported: AND, OR, NOT
+
+Part 2: How to Write Pseudocode (Examples)
+Now that you know the rules, here is how you combine them to write valid algorithms that your Java compiler will successfully translate into Go.
+
+Example 1: Basic Variables and Logic
+Notice how every keyword is uppercase, and strings are wrapped in double quotes.
+
+Plaintext
+DECLARE age AS INT
+age = 21
+
+DECLARE isStudent AS BOOLEAN
+isStudent = TRUE
+
+IF age > 18 AND isStudent = TRUE THEN
+  PRINT "Eligible for student discount"
+ELSE
+  PRINT "Standard pricing applies"
+ENDIF
+Example 2: The FOR Loop (Counting and Math)
+This loop will automatically handle the creation of the i variable and increment it behind the scenes in the generated Go code.
+
+Plaintext
+DECLARE multiplier AS INT
+multiplier = 5
+
+PRINT "Multiplication Table:"
+
+FOR i = 1 TO 10 DO
+  DECLARE result AS INT
+  result = i * multiplier
+  PRINT result
+ENDFOR
+Example 3: The WHILE Loop with Nested Logic
+This is how you write more complex branching logic since there is no ELSE IF token.
+
+Plaintext
+DECLARE batteryLevel AS INT
+batteryLevel = 100
+
+WHILE batteryLevel > 0 DO
+  IF batteryLevel > 50 THEN
+    PRINT "Battery optimal"
+  ELSE
+    IF batteryLevel > 20 THEN
+      PRINT "Battery low"
+    ELSE
+      PRINT "Please charge immediately"
+    ENDIF
+  ENDIF
+  
+  batteryLevel = batteryLevel - 20
+ENDWHILE
+
+In the custom compiler you just built, spaces do not matter, but newlines and spacing between words do. Because you are the creator of this language, you get to dictate the rules based on how you programmed the Lexer and Parser. Here is exactly how your Java code handles whitespace.
+
+1. Spaces (Horizontal Whitespace) = Ignored
+Your compiler completely ignores spaces, tabs, and empty gaps, except when they are used to separate two words.
+
+Because of your Regex Matcher, the Lexer jumps from token to token and skips the empty space in between. Therefore, all three of these are treated exactly the same by your compiler:
+
+x=5
+
+x = 5
+
+x      =      5
+
+The only two exceptions where spaces matter:
+
+Inside Strings: "Hello World" is different from "HelloWorld" because your regex specifically captures everything inside the quotes.
+
+Separating Keywords: You must put a space between keywords and variables. DECLARE x works perfectly. If you forget the space and type DECLAREx, your Lexer will think it is one giant variable name and the parser will crash.
+
+2. Newlines (Vertical Whitespace) = Highly Recommended
+In languages like Java or C++, newlines don't matter because you use semicolons (;) to tell the compiler when a statement ends. In Python, newlines and indentation are strictly enforced.
+
+In your pseudocode, newlines act as your visual separators.
+
+Look at this line in your Lexer.java:
+String[] lines = input.split("\\r?\\n");
+
+Your Lexer intentionally splits the incoming text line-by-line. It does this for one major reason: Error Reporting. If the user makes a mistake, your compiler needs to know exactly which line they were on to throw the error: [SYNTAX ERROR] Line 4: Expected '='.
+
+A Hidden Quirk in Your Parser (The "Bleeding Expression" Bug)
+Because we built a simplified parseExpression() method to handle math, newlines actually become very important for keeping your math separate.
+
+If a user writes this on one line:
+x = 5 y = 10
+
+Your Lexer just sees a flat list of tokens: x, =, 5, y, =, 10.
+Your parseExpression method is programmed to keep grabbing numbers, operators, and identifiers until it hits a keyword (like IF or PRINT). Because there are no keywords there, it will accidentally assign the entire chunk "5 y = 10" to x, which will generate broken Go code.
+
+The Rule to give your users:
+"Write one statement per line. You do not need semicolons, but press Enter after every command."

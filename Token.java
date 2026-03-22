@@ -1,11 +1,15 @@
 public class Token {
-
     public enum TokenType {
-        DECLARE, AS, INT,
-        IF, THEN, ENDIF,
-        WHILE, DO, ENDWHILE,
-        PRINT, IDENTIFIER, NUMBER,
-        OPERATOR, EOF
+        // Types & Declarations
+        DECLARE, AS, INT, STRING, BOOLEAN, 
+        // Control Flow
+        IF, THEN, ELSE, ENDIF, 
+        WHILE, DO, ENDWHILE, 
+        FOR, TO, ENDFOR, 
+        PRINT,
+        // Values & Operators
+        IDENTIFIER, NUMBER, STRING_LITERAL, TRUE, FALSE, 
+        AND, OR, NOT, OPERATOR, EOF
     }
 
     public TokenType type;
@@ -19,9 +23,7 @@ public class Token {
     }
 
     @Override
-    public String toString() {
-        return type + "('" + value + "') [Line: " + line + "]";
-    }
+    public String toString() { return type + "('" + value + "') [Line: " + line + "]"; }
 }
 /*Iss file main token ke type aur structure ko define kia hain
   Error handle main help ho sake issi liye line variable ko add kia gaya hain

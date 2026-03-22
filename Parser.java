@@ -34,11 +34,15 @@ public class Parser {
         Token startToken = peek();
         ASTNode node;
 
-        if(match(Token.TokenType.DECLARE)) {
+        if (match(Token.TokenType.DECLARE)) {
             ASTNode.VarDeclNode decl = new ASTNode.VarDeclNode();
             decl.name = consume().value;
-            if(!match(Token.TokenType.AS) || !match(Token.TokenType.INT)) {
-                ErrorHandler.report("SYNTAX","Expected 'AS INT' after variable decleration.", startToken.line);
+            match(Token.TokenType.AS);
+
+            if (match(Token.TokenType.INT) || match(Token.TokenType.STRING) || match(Token.TokenType.BOOLEAN)) {
+                decl.dataType = tokens.get(current - 1).value; 
+            } else {
+                ErrorHandler.report("SYNTAX", "Expected INT, STRING, or BOOLEAN", startToken.line);
             }
             node = decl;
         }
@@ -58,8 +62,13 @@ public class Parser {
             ASTNode.IfNode ifNode = new ASTNode.IfNode();
             ifNode.condition = parseExpression();
             if (!match(Token.TokenType.THEN)) ErrorHandler.report("SYNTAX", "Expected 'THEN'.", startToken.line);
-            while (peek().type != Token.TokenType.ENDIF && peek().type != Token.TokenType.EOF) {
+            while (peek().type != Token.TokenType.ENDIF && peek().type != Token.TokenType.ELSE && peek().type != Token.TokenType.EOF) {
                 ifNode.body.add(parseStatement());
+            }
+            if (match(Token.TokenType.ELSE)) {
+                while (peek().type != Token.TokenType.ENDIF) {
+                    ifNode.elseBody.add(parseStatement());
+                }
             }
             if (!match(Token.TokenType.ENDIF)) ErrorHandler.report("SYNTAX", "Expected 'ENDIF'.", startToken.line);
             node = ifNode;
@@ -73,7 +82,22 @@ public class Parser {
             }
             if (!match(Token.TokenType.ENDWHILE)) ErrorHandler.report("SYNTAX", "Expected 'ENDWHILE'.", startToken.line);
             node = whileNode;
-        } else {
+        } 
+        else if (match(Token.TokenType.FOR)) {
+            ASTNode.ForNode forNode = new ASTNode.ForNode();
+            forNode.loopVar = consume().value; // eg i
+            match(Token.TokenType.OPERATOR); // '='
+            forNode.startExpr = parseExpression(); // eg 0
+            match(Token.TokenType.TO);
+            forNode.endExpr = parseExpression(); // eg 10
+            match(Token.TokenType.DO);
+            
+            while (peek().type != Token.TokenType.ENDFOR) {
+                forNode.body.add(parseStatement());
+            }
+            match(Token.TokenType.ENDFOR);
+            node = forNode;
+        }else {
             ErrorHandler.report("SYNTAX", "Unknown statement starting with: " + peek().value, startToken.line);
             return null; // Unreachable
         }
@@ -84,8 +108,25 @@ public class Parser {
 
     private String parseExpression() {
         StringBuilder expr = new StringBuilder();
-        while(peek().type == Token.TokenType.IDENTIFIER || peek().type == Token.TokenType.NUMBER || peek().type == Token.TokenType.OPERATOR) {
-            expr.append(consume().value).append(" ");
+        while (peek().type == Token.TokenType.IDENTIFIER || 
+               peek().type == Token.TokenType.NUMBER || 
+               peek().type == Token.TokenType.STRING_LITERAL ||
+               peek().type == Token.TokenType.TRUE ||
+               peek().type == Token.TokenType.FALSE ||
+               peek().type == Token.TokenType.AND ||
+               peek().type == Token.TokenType.OR ||
+               peek().type == Token.TokenType.NOT ||
+               peek().type == Token.TokenType.OPERATOR) {
+            
+            String val = consume().value;
+            // translate logical operators for simplicity
+            if (val.equals("AND")) val = "&&";
+            else if (val.equals("OR")) val = "||";
+            else if (val.equals("NOT")) val = "!";
+            else if (val.equals("TRUE")) val = "true";
+            else if (val.equals("FALSE")) val = "false";
+            
+            expr.append(val).append(" ");
         }
         return expr.toString().trim();
     }
