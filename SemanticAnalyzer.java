@@ -51,6 +51,9 @@ public class SemanticAnalyzer implements ASTNode.Visitor {
     }
     @Override
     public void visit(ASTNode.PrintNode node) {
+        if(node.expression.startsWith("\"") && node.expression.endsWith("\"")) {
+            return; // since we have no variables to vaidate in string literals
+        }
         String[] parts = node.expression.split(" ");
         for (String part : parts) {
             if (part.matches("[a-zA-Z_]\\w*") && !symbolTable.isDefined(part)) {
