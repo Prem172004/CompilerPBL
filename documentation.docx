@@ -1,0 +1,168 @@
+Project Documentation: Pseudocode to Go Language Compiler
+1. Project Overview
+Use Case: This project serves as a custom source-to-source compiler (transpiler) that reads structured pseudocode and translates it into executable Go (Golang) code. It is designed to help beginners write logic in plain, readable text and automatically generate production-ready backend code.
+Importance: Building a compiler from scratch demonstrates a deep understanding of systems engineering, theory of computation, data structures (trees/maps), and object-oriented design patterns (Visitor pattern, Recursive Descent).
+
+2. Core Architecture
+The compiler follows a classic multi-pass architecture:
+
+Lexical Analysis: Reads raw text and groups characters into Tokens.
+
+Syntax Analysis: Reads Tokens and builds an Abstract Syntax Tree (AST).
+
+Semantic Analysis: Traverses the AST to ensure logical rules are followed (e.g., variables are declared before use).
+
+Code Generation: Traverses the verified AST to emit formatted Go code.
+
+3. Class-by-Class Documentation
+3.1. Token.java
+Purpose: Represents the smallest atomic unit of meaning in the source code (e.g., a keyword, a number, or an operator).
+
+Importance: Decouples the raw string text from the rest of the compiler. The parser doesn't need to know how "WHILE" was spelled, only that a WHILE token exists.
+
+Implementation Summary:
+
+Java
+public class Token {
+    public enum TokenType { DECLARE, AS, INT, IF, THEN, ENDIF, WHILE, DO, ENDWHILE, PRINT, IDENTIFIER, NUMBER, OPERATOR, EOF }
+    public TokenType type;
+    public String value;
+    public int line;
+    // Constructor and toString() methods omitted for brevity
+}
+3.2. Lexer.java
+Purpose: The Scanner. It reads the raw input string character by character (or using Regular Expressions) and converts it into a List<Token>.
+
+Key Functions: * tokenize(): Iterates through the input, skips whitespace, matches keywords using a hash map, and generates tokens. Tracks line numbers for error handling.
+
+Implementation Summary:
+
+Java
+public List<Token> tokenize() {
+    // Uses Regex to match words, numbers, and operators
+    Pattern pattern = Pattern.compile("\\s+|(?<word>[a-zA-Z_]\\w*)|(?<num>\\d+)|(?<op>[=+\\-*/><])");
+    // Loop matches strings to TokenTypes and adds to List<Token>
+}
+3.3. ASTNode.java
+Purpose: Defines the Abstract Syntax Tree. It contains a base interface and nested static classes for every type of statement in our language (IfNode, WhileNode, AssignNode, etc.).
+
+Importance: This is the core data structure of the compiler. It represents the hierarchical, grammatical structure of the program rather than just a flat list of words.
+
+Key Functions:
+
+accept(Visitor visitor): Implements the Visitor Design Pattern, allowing outside classes (like the Code Generator) to process the tree without modifying the tree's code.
+
+Implementation Summary:
+
+Java
+public abstract class ASTNode {
+    public int line;
+    public abstract void accept(Visitor visitor);
+
+    public static class AssignNode extends ASTNode {
+        public String name;
+        public String expression;
+        public void accept(Visitor visitor) { visitor.visit(this); }
+    }
+    // Other nodes (IfNode, WhileNode) follow the same structure
+}
+3.4. Parser.java
+Purpose: The Syntax Analyzer. It takes the list of tokens and builds the ASTNode tree based on strict grammar rules.
+
+Use Case: If a user types x = , the parser recognizes that an assignment is missing an expression and throws a Syntax Error.
+
+Key Functions:
+
+parse(): The main entry point that builds the ProgramNode.
+
+parseStatement(): A recursive descent method that looks at the current token and decides which AST Node to build.
+
+match(TokenType): Consumes a token if it matches the expected grammar.
+
+Implementation Summary:
+
+Java
+public ASTNode.ProgramNode parse() {
+    ASTNode.ProgramNode program = new ASTNode.ProgramNode();
+    while (peek().type != Token.TokenType.EOF) {
+        program.statements.add(parseStatement());
+    }
+    return program;
+}
+3.5. SymbolTable.java
+Purpose: A memory structure (usually a Hash Map) that keeps track of all variables declared in the program.
+
+Importance: Crucial for the Semantic Analyzer to verify that variables exist before they are used.
+
+Key Functions:
+
+define(name, type): Registers a new variable.
+
+isDefined(name): Checks if a variable exists.
+
+3.6. SemanticAnalyzer.java
+Purpose: Walks through the AST to enforce logical rules that the Parser cannot catch.
+
+Use Case: Catching the error if a user writes x = 10 but forgot to write DECLARE x AS INT first.
+
+Implementation Summary:
+
+Java
+public class SemanticAnalyzer implements ASTNode.Visitor {
+    private final SymbolTable symbolTable = new SymbolTable();
+
+    @Override
+    public void visit(ASTNode.AssignNode node) {
+        if (!symbolTable.isDefined(node.name)) {
+            ErrorHandler.report("SEMANTIC", "Undeclared variable: " + node.name, node.line);
+        }
+    }
+}
+3.7. GoWriter.java
+Purpose: A utility class that handles string formatting, line breaks, and indentation levels for the target Go code.
+
+Importance: Prevents the CodeGenerator from becoming cluttered with \t and \n string concatenations, ensuring the output code is beautifully formatted.
+
+3.8. CodeGenerator.java
+Purpose: The Backend. It traverses the verified AST and translates each node into its corresponding Go language syntax.
+
+Use Case: Converts the WhileNode into Go's for condition { ... } syntax.
+
+Implementation Summary:
+
+Java
+public class CodeGenerator implements ASTNode.Visitor {
+    private final GoWriter writer = new GoWriter();
+
+    @Override
+    public void visit(ASTNode.WhileNode node) {
+        writer.writeLine("for " + node.condition + " {");
+        writer.indent();
+        for (ASTNode stmt : node.body) stmt.accept(this);
+        writer.dedent();
+        writer.writeLine("}");
+    }
+}
+3.9. ErrorHandler.java
+Purpose: Centralizes the reporting of errors (Lexical, Syntax, or Semantic).
+
+Importance: Ensures that the compiler fails gracefully, providing the user with the exact phase, line number, and reason for the crash instead of throwing messy Java stack traces.
+
+3.10. Compiler.java (Driver Class)
+Purpose: The main execution thread of the application. It handles user input via the console, orchestrates the flow of data through all the compilation phases, and prints the final output.
+
+Implementation Summary:
+
+Java
+// Standard execution pipeline
+Lexer lexer = new Lexer(code);
+List<Token> tokens = lexer.tokenize();
+
+Parser parser = new Parser(tokens);
+ASTNode.ProgramNode ast = parser.parse();
+
+SemanticAnalyzer semanticAnalyzer = new SemanticAnalyzer();
+semanticAnalyzer.analyze(ast);
+
+CodeGenerator generator = new CodeGenerator();
+String goCode = generator.generate(ast);
